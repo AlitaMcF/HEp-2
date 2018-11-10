@@ -32,10 +32,10 @@ class Residual_Block(nn.Module):
         self.bn1 = nn.BatchNorm2d(outChannel)
         self.conv2 = nn.Conv2d(outChannel, outChannel, kernel_size = 3, stride = stride, padding = 1, bias = False)
         self.bn2 = nn.BatchNorm2d(outChannel)
-        self.conv3 = nn.Conv2d(outChannel, outChannel*4, kernel_size = 1, bias = False)
+        self.conv3 = nn.Conv2d(outChannel, outChannel*self.expansion, kernel_size = 1, bias = False)
         self.bn3 = nn.BatchNorm2d(outChannel*4)
         self.relu = nn.ReLU(inplace = True)
-        self.decSample = decSample;
+        self.decSample = decSample # 下采样层
         self.stride = stride
 
 
@@ -64,10 +64,11 @@ class Residual_Block(nn.Module):
 
 
 class ResNet50(nn.Module):
-    def __init__(self, layers, num_classes = 6, model_path = 'HEP-ResNet50.pkl'):
+    def __init__(self, layers, num_classes = 6, model_path = 'HEp-2_ResNet50_Model.pkl', loadModel = False):
         super(ResNet50, self).__init__()
         self.inChannel = 64
         self.modelPath = model_path
+        self.loadModel = loadModel
         self.conv1 = nn.Conv2d(1, 64, kernel_size = 7, stride = 2, padding = 3, bias = False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace = True)
@@ -76,7 +77,7 @@ class ResNet50(nn.Module):
         self.block2 = self.make_block(128, layers[1], stride = 2)
         self.block3 = self.make_block(256, layers[2], stride = 2)
         self.block4 = self.make_block(512, layers[3], stride = 2)
-        self.avgpool = nn.AvgPool2d(3, stride = 1)
+        self.avgpool = nn.AvgPool2d(3, stride = 1) # 3×3 池化层
         self.linear = nn.Linear(512*Residual_Block.expansion, num_classes)
         self.init_param()
 
@@ -95,9 +96,12 @@ class ResNet50(nn.Module):
                 m.bias.data.zero_()
 
 
+    # 创建残差网络的"块"
     def make_block(self, channel, blocks, stride = 1):
         decSample = None
         layers = []
+
+        # 创建下采样层
         if stride != 1 or self.inChannel != channel*Residual_Block.expansion:
             decSample = nn.Sequential(
                 nn.Conv2d(self.inChannel, channel * Residual_Block.expansion, kernel_size = 1, stride = stride, bias = False),
@@ -138,22 +142,17 @@ transform = transforms.Compose(
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
 )
 
+# 读取图片数据
 trainSet = torchvision.datasets.ImageFolder(root=path + '/afterMask', transform=transform, loader=readImg)
-
-trainloader = torch.utils.data.DataLoader(trainSet, batch_size=1,
-                                          shuffle=True, num_workers=0)
-
+trainloader = torch.utils.data.DataLoader(trainSet, batch_size=1,shuffle=True, num_workers=0)
 testSet = torchvision.datasets.ImageFolder(root=path + '/test', transform=transform, loader=readImg)
-
-testloader = torch.utils.data.DataLoader(testSet, batch_size=1,
-                                         shuffle=False, num_workers=0)
-
+testloader = torch.utils.data.DataLoader(testSet, batch_size=1,shuffle=False, num_workers=0)
 classes = testSet.classes
 
-
-
-
+# 创建网络
 net = ResNet50([3, 4, 6, 3]);
+if net.loadModel:
+    net.load_state_dict(torch.load('HEp-2_ResNet50_Model.pkl'))
 
 # 定义损失函数以及优化器
 criterion = nn.CrossEntropyLoss()
@@ -165,19 +164,19 @@ for epoch in range(2):  # 利用数据集训练两次
     for i, data in enumerate(trainloader, 0):
         # 得到输入数据
         inputs, labels = data
-
         # 包装数据
         inputs, labels = Variable(inputs), Variable(labels)
 
         # 梯度清零
         optimizer.zero_grad()
 
+        # 反向传播，优化
         outputs = net(inputs)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
-        # display information
+        # 输出损失值
         running_loss += loss.data
         if i % 2 == 0:
             print('[%d, %5d] loss: %.3f' % (epoch+1, i+1, running_loss/2))
@@ -185,6 +184,7 @@ for epoch in range(2):  # 利用数据集训练两次
 
 print('Finished Training')
 
+# 统计训练效果
 dataiter = iter(testloader)
 Sum = 0
 TruePrd = 0
@@ -210,3 +210,6 @@ while True:
 print(TruePrd)
 print(Sum)
 print(float(TruePrd)/Sum)
+
+# 保存网络
+torch.save(net.state_dict(), 'HEp-2_ResNet50_Model.pkl')
