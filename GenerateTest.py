@@ -2,7 +2,7 @@ import random
 import os
 import shutil
 
-ratio = 0.2  # 用作测试集的比例
+ratio = 0.2  # 测试集占原数据的比例
 path = "D:\DataAndHomework\HEp-2细胞项目\数据集\Hep2016"  # 总文件夹目录
 
 trainPath = path + '/train/Centromere/'
