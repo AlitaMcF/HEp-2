@@ -7,11 +7,13 @@ import torchvision
 from PIL import Image as Image
 import matplotlib.pyplot as plt
 from torch.autograd import Variable
+import datetime
 
 path = "D:\\DataAndHomework\\HEp-2细胞项目\\数据集\\Hep2016"  # 总文件夹目录
 
 device= torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
+
+modelNumStart = 22;
 
 def readImg(path):
     return Image.open(path)
@@ -31,11 +33,11 @@ class Residual_Block(nn.Module):
 
     def __init__(self, inChannel, outChannel, stride = 1, decSample = None):
         super(Residual_Block, self).__init__()
-        self.conv1 = nn.Conv2d(inChannel, outChannel, kernel_size = 1, bias = False)
+        self.conv1 = nn.Conv2d(inChannel, outChannel, kernel_size = 1, bias = True)
         self.bn1 = nn.BatchNorm2d(outChannel)
-        self.conv2 = nn.Conv2d(outChannel, outChannel, kernel_size = 3, stride = stride, padding = 1, bias = False)
+        self.conv2 = nn.Conv2d(outChannel, outChannel, kernel_size = 3, stride = stride, padding = 1, bias = True)
         self.bn2 = nn.BatchNorm2d(outChannel)
-        self.conv3 = nn.Conv2d(outChannel, outChannel*self.expansion, kernel_size = 1, bias = False)
+        self.conv3 = nn.Conv2d(outChannel, outChannel*self.expansion, kernel_size = 1, bias = True)
         self.bn3 = nn.BatchNorm2d(outChannel*4)
         self.relu = nn.ReLU(inplace = True)
         self.decSample = decSample # 下采样层
@@ -67,12 +69,13 @@ class Residual_Block(nn.Module):
 
 
 class ResNet50(nn.Module):
-    def __init__(self, layers, num_classes = 6, model_path = 'HEp-2_ResNet50_Model.pkl', loadModel = False):
+    def __init__(self, layers, num_classes = 6, model_path = 'model.pkl', loadModel = False, useGPU = True):
         super(ResNet50, self).__init__()
         self.inChannel = 64
         self.modelPath = model_path
+        self.useGPU = useGPU
         self.loadModel = loadModel
-        self.conv1 = nn.Conv2d(1, 64, kernel_size = 7, stride = 2, padding = 3, bias = False)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size = 7, stride = 2, padding = 3, bias = True)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace = True)
         self.maxpool = nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1)
@@ -138,6 +141,7 @@ class ResNet50(nn.Module):
 
 
 
+
 # 对数据集进行处理
 transform = transforms.Compose(
     [transforms.Resize((70, 70)),
@@ -153,19 +157,27 @@ testloader = torch.utils.data.DataLoader(testSet, batch_size=1,shuffle=False, nu
 classes = testSet.classes
 
 # 创建网络
-net = ResNet50([3, 4, 6, 3], loadModel = False)
+net = ResNet50([3, 4, 6, 3], loadModel = True, useGPU = True)
 if net.loadModel:
-    net.load_state_dict(torch.load('HEp-2_ResNet50_Model.pkl'))
+    modelName = 'model_' + str(modelNumStart - 1) + '.pkl'
+    net.load_state_dict(torch.load(modelName))
 
 # 将网络加载到GPU中
-net.to(device)
+if(net.useGPU == True):
+    net.to(device)
+    print(device)
+else:
+    print('CPU')
 
 # 定义损失函数以及优化器
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(net.parameters(), lr = 0.001, momentum = 0.9)
+optimizer = torch.optim.SGD(net.parameters(), lr = 0.00001, momentum = 0.9)
+
+
+print('startime:' + str(datetime.datetime.now()))
 
 # 训练网络
-for epoch in range(2):  # 利用数据集训练两次
+for epoch in range(2):  # 利用数据集训练1次
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # 得到输入数据
@@ -173,7 +185,8 @@ for epoch in range(2):  # 利用数据集训练两次
         # 包装数据
         inputs, labels = Variable(inputs), Variable(labels)
         # 再将数据加载到GPU中
-        inputs, labels = inputs.to(device), labels.to(device)
+        if(net.useGPU == True):
+            inputs, labels = inputs.to(device), labels.to(device)
 
         # 梯度清零
         optimizer.zero_grad()
@@ -186,38 +199,76 @@ for epoch in range(2):  # 利用数据集训练两次
 
         # 输出损失值
         running_loss += loss.data
-        if i % 2 == 0:
-            print('[%d, %5d] loss: %.3f' % (epoch+1, i+1, running_loss/2))
+        if i % 50 == 0:
+            print('[%d, %5d] loss: %.3f' % (epoch+1, i+1, running_loss/50))
             running_loss = 0.0
+
+    # 保存网络
+    savedModleName = 'model_'+str(modelNumStart + epoch)+'.pkl'
+    torch.save(net.state_dict(), savedModleName)
+
+    # 统计训练效果
+    dataiter = iter(testloader)
+    Sum = 0
+    TruePrd = 0
+    while True:
+        try:
+            images, labels = dataiter.next()
+            # 将测试集加载到GPU中
+            if (net.useGPU == True):
+                images, labels = images.to(device), labels.to(device)
+            Sum += 1
+            # print('GroundTruth:', ' '.join('%5s'%(classes[labels[0]])))
+
+            # 输出神经网络的分类效果
+            outputs = net(Variable(images))
+
+            # 获取6个类别的预测值大小，预测值越大，神经网络认为属于该类别的可能性越大
+            _, predicted = torch.max(outputs.data, 1)
+
+            # print('Predicted:', ' '.join('%5s'%(classes[predicted[0]])))
+
+            if labels[0] == predicted[0]:
+                TruePrd = TruePrd + 1
+        except StopIteration:
+            break
+
+    print('num of true: '+ str(TruePrd))
+    print('num of testset: ' + str(Sum))
+    print('accuracy: ' + str(float(TruePrd) / Sum*100)+'%')
+
+    print('finish '+ str(epoch)+ ': '+ str(datetime.datetime.now()))
+
 
 print('Finished Training')
 
-# 统计训练效果
-dataiter = iter(testloader)
-Sum = 0
-TruePrd = 0
-while True:
-    try:
-        images, labels = dataiter.next()
-        Sum += 1
-        print('GroundTruth:', ' '.join('%5s'%(classes[labels[0]])))
-
-        # 输出神经网络的分类效果
-        outputs = net(Variable(images))
-
-        # 获取6个类别的预测值大小，预测值越大，神经网络认为属于该类别的可能性越大
-        _, predicted = torch.max(outputs.data, 1)
-
-        print('Predicted:', ' '.join('%5s'%(classes[predicted[0]])))
-
-        if labels[0] == predicted[0]:
-            TruePrd = TruePrd + 1
-    except StopIteration:
-        break
-
-print(TruePrd)
-print(Sum)
-print(float(TruePrd)/Sum)
-
-# 保存网络
-torch.save(net.state_dict(), 'HEp-2_ResNet50_Model.pkl')
+# # 统计训练效果
+# dataiter = iter(testloader)
+# Sum = 0
+# TruePrd = 0
+# while True:
+#     try:
+#         images, labels = dataiter.next()
+#         # 将测试集加载到GPU中
+#         if(net.useGPU == True):
+#             images, labels = images.to(device), labels.to(device)
+#         Sum += 1
+#         # print('GroundTruth:', ' '.join('%5s'%(classes[labels[0]])))
+#
+#         # 输出神经网络的分类效果
+#         outputs = net(Variable(images))
+#
+#         # 获取6个类别的预测值大小，预测值越大，神经网络认为属于该类别的可能性越大
+#         _, predicted = torch.max(outputs.data, 1)
+#
+#         # print('Predicted:', ' '.join('%5s'%(classes[predicted[0]])))
+#
+#         if labels[0] == predicted[0]:
+#             TruePrd = TruePrd + 1
+#     except StopIteration:
+#         break
+#
+# print(TruePrd)
+# print(Sum)
+# print(float(TruePrd)/Sum)
+#
