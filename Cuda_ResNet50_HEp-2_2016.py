@@ -9,11 +9,22 @@ import matplotlib.pyplot as plt
 from torch.autograd import Variable
 import datetime
 
+
+# *****************************************************************************
+# *********************每次训练可能需要更改的参数都在这里****************************
+
+loopTimes = 2;              # 训练的次数
+modelNumStart = 22;         # 当前想训练的网络的序号
+learningRate = 0.00001;     # 当前网络学习率
+isLoadModel = True;         # 是否加载已有的网络
+isUseGPU = True;            # 是否使用GPU加速
 path = "D:\\DataAndHomework\\HEp-2细胞项目\\数据集\\Hep2016"  # 总文件夹目录
+
+# *****************************************************************************
+
 
 device= torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-modelNumStart = 22;
 
 def readImg(path):
     return Image.open(path)
@@ -141,7 +152,6 @@ class ResNet50(nn.Module):
 
 
 
-
 # 对数据集进行处理
 transform = transforms.Compose(
     [transforms.Resize((70, 70)),
@@ -157,7 +167,7 @@ testloader = torch.utils.data.DataLoader(testSet, batch_size=1,shuffle=False, nu
 classes = testSet.classes
 
 # 创建网络
-net = ResNet50([3, 4, 6, 3], loadModel = True, useGPU = True)
+net = ResNet50([3, 4, 6, 3], loadModel = isLoadModel, useGPU = isUseGPU)
 if net.loadModel:
     modelName = 'model_' + str(modelNumStart - 1) + '.pkl'
     net.load_state_dict(torch.load(modelName))
@@ -171,13 +181,12 @@ else:
 
 # 定义损失函数以及优化器
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(net.parameters(), lr = 0.00001, momentum = 0.9)
-
+optimizer = torch.optim.SGD(net.parameters(), lr = learningRate, momentum = 0.9)
 
 print('startime:' + str(datetime.datetime.now()))
 
 # 训练网络
-for epoch in range(2):  # 利用数据集训练1次
+for epoch in range(loopTimes):  # 利用数据集训练n次
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # 得到输入数据
@@ -236,39 +245,4 @@ for epoch in range(2):  # 利用数据集训练1次
     print('num of true: '+ str(TruePrd))
     print('num of testset: ' + str(Sum))
     print('accuracy: ' + str(float(TruePrd) / Sum*100)+'%')
-
     print('finish '+ str(epoch)+ ': '+ str(datetime.datetime.now()))
-
-
-print('Finished Training')
-
-# # 统计训练效果
-# dataiter = iter(testloader)
-# Sum = 0
-# TruePrd = 0
-# while True:
-#     try:
-#         images, labels = dataiter.next()
-#         # 将测试集加载到GPU中
-#         if(net.useGPU == True):
-#             images, labels = images.to(device), labels.to(device)
-#         Sum += 1
-#         # print('GroundTruth:', ' '.join('%5s'%(classes[labels[0]])))
-#
-#         # 输出神经网络的分类效果
-#         outputs = net(Variable(images))
-#
-#         # 获取6个类别的预测值大小，预测值越大，神经网络认为属于该类别的可能性越大
-#         _, predicted = torch.max(outputs.data, 1)
-#
-#         # print('Predicted:', ' '.join('%5s'%(classes[predicted[0]])))
-#
-#         if labels[0] == predicted[0]:
-#             TruePrd = TruePrd + 1
-#     except StopIteration:
-#         break
-#
-# print(TruePrd)
-# print(Sum)
-# print(float(TruePrd)/Sum)
-#
