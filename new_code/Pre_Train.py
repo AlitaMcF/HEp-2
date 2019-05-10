@@ -36,7 +36,7 @@ numWorker = 0  # 进程数量,先不要改这个
 # 创建存放模型的文件夹
 modelFolder = os.path.exists(modelDir)
 if not modelFolder:
-    # 判断是否存在文件夹如果不存在则创建为文件夹
+    # 判断是否存在文件夹如果不存在则创建为文件夹 
     # makedirs 创建文件时如果路径不存在会创建这个路径
     os.makedirs(modelDir)
 print('modelFolder is at: ' + os.path.abspath(modelDir))
