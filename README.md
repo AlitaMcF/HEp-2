@@ -5,11 +5,6 @@ HEp-2 Cell Classification Project
 
 * The neural network for classifying the HEp-2 cells.<br>
 * This is a 50 levels ResNet with Transfer Learning.
-* Here are the dataset urls:
-    * dataset of HEp-2 2016: [hep2016.zip](https://pan.baidu.com/s/1iP7ZS79ICae1miu_pbWTVA "https://pan.baidu.com/s/1iP7ZS79ICae1miu_pbWTVA")
-      * 提取码：ms3z
-    * dataset of HEp-2 2012: [hep2012.zip](https://pan.baidu.com/s/1WTHMiEKsMdpMZSmjAvCk-g "https://pan.baidu.com/s/1WTHMiEKsMdpMZSmjAvCk-g")
-      * 提取码：2brd
     
 ## **Description**
 _Old Code是前期迭代版本，建议以New Code为主_
@@ -29,3 +24,9 @@ _Old Code是前期迭代版本，建议以New Code为主_
    * **[ResNet50_Failed.py](/old_code/ResNet50_Failed.py)**：失败的网络，暂且留着
    * **[GenerateTest.py](/old_code/GenerateTest.py)**：按20%比例随机生成测试集
    * **[MaskImg.py](/old_code/MaskImg.py)**：切割图像
+
+## **Dataset**
+* dataset of HEp-2 2016: [hep2016.zip](https://pan.baidu.com/s/1iP7ZS79ICae1miu_pbWTVA "https://pan.baidu.com/s/1iP7ZS79ICae1miu_pbWTVA")
+   * 提取码：ms3z
+* dataset of HEp-2 2012: [hep2012.zip](https://pan.baidu.com/s/1WTHMiEKsMdpMZSmjAvCk-g "https://pan.baidu.com/s/1WTHMiEKsMdpMZSmjAvCk-g")
+   * 提取码：2brd
