@@ -24,8 +24,8 @@ _Old Code是前期迭代版本，建议以New Code为主_
    * **[ExpandTrainingSet.py](/new_code/ExpandTrainingSet.py)**: 数据扩容
 
 * **Old Code**
-   * **Cuda_ResNet50_HEp-2_2016.py**：可利用GPU加速训练过程
-   * **ResNet50_HEp-2_2016.py**：只能用CPU运行
-   * **ResNet50_Failed.py**：失败的网络，暂且留着
-   * **GenerateTest.py**：按20%比例随机生成测试集
-   * **MaskImg.py**：切割图像
+   * **[Cuda_ResNet50_HEp-2_2016.py](/old_code/Cuda_ResNet50_HEp-2_2016.py)**：可利用GPU加速训练过程
+   * **[ResNet50_HEp-2_2016.py](/old_code/ResNet50_HEp-2_2016.py)**：只能用CPU运行
+   * **[ResNet50_Failed.py](/old_code/ResNet50_Failed.py)**：失败的网络，暂且留着
+   * **[GenerateTest.py](/old_code/GenerateTest.py)**：按20%比例随机生成测试集
+   * **[MaskImg.py](/old_code/MaskImg.py)**：切割图像
