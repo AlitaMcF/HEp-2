@@ -4,8 +4,8 @@ HEp-2 Cell Classification Project
 `ResNet50`  `Transfer Learning`  `PyTorch`
 
 * The neural network for classifying the HEp-2 cells.<br>
-* This is a 50 levels ResNet.
-* Here is the dataset url:
+* This is a 50 levels ResNet with Transfer Learning.
+* Here are the dataset urls:
     * dataset of HEp-2 2016: [hep2016.zip](https://pan.baidu.com/s/1iP7ZS79ICae1miu_pbWTVA "https://pan.baidu.com/s/1iP7ZS79ICae1miu_pbWTVA")
       * 提取码：ms3z
     * dataset of HEp-2 2012: [hep2012.zip](https://pan.baidu.com/s/1WTHMiEKsMdpMZSmjAvCk-g "https://pan.baidu.com/s/1WTHMiEKsMdpMZSmjAvCk-g")
