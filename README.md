@@ -1,7 +1,7 @@
 HEp-2 Cell Classification Project
 ====
 
-__`ResNet50`__  __`Transfer Learning`__  __`PyTorch`__
+__`ResNet50`__ &nbsp; __`Transfer Learning`__ &nbsp; __`PyTorch`__
 
 * The neural network for classifying the HEp-2 cells.<br>
 * This is a 50 levels ResNet with Transfer Learning.
